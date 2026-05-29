@@ -12,6 +12,13 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
+app.use((err, _req, res, next) => {
+  if (err instanceof SyntaxError && "body" in err) {
+    return res.status(400).json({ error: "Invalid JSON request body" });
+  }
+  next(err);
+});
+
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 app.use("/sessions", sessionsRouter);

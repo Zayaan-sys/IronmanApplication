@@ -3,6 +3,21 @@ const { supabase } = require("../db");
 
 const router = Router();
 
+// GET /plans
+router.get("/", async (_req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("plans")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /plans/active
 router.get("/active", async (req, res) => {
   try {

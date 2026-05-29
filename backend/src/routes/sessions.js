@@ -3,6 +3,14 @@ const { supabase } = require("../db");
 
 const router = Router();
 
+const DISCIPLINES = new Set(["swim", "bike", "run", "strength"]);
+
+function toOptionalNumber(value) {
+  if (value === undefined || value === null || value === "") return undefined;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : undefined;
+}
+
 // GET /sessions
 router.get("/", async (req, res) => {
   try {
@@ -76,6 +84,18 @@ router.post("/", async (req, res) => {
   } = req.body;
 
   if (!discipline) return res.status(400).json({ error: "discipline is required" });
+  if (!DISCIPLINES.has(discipline)) {
+    return res.status(400).json({ error: "discipline must be swim, bike, run, or strength" });
+  }
+
+  const zone = toOptionalNumber(training_zone);
+  const feel = toOptionalNumber(feeling);
+  if (zone !== undefined && (zone < 1 || zone > 5)) {
+    return res.status(400).json({ error: "training_zone must be between 1 and 5" });
+  }
+  if (feel !== undefined && (feel < 0 || feel > 4)) {
+    return res.status(400).json({ error: "feeling must be between 0 and 4" });
+  }
 
   try {
     const { data, error } = await supabase
@@ -83,8 +103,15 @@ router.post("/", async (req, res) => {
       .insert({
         discipline, title,
         session_date: session_date || new Date().toISOString().split("T")[0],
-        duration_seconds, distance_km, avg_hr, avg_pace,
-        training_zone, feeling, notes, plan_week, planned_session_id,
+        duration_seconds: toOptionalNumber(duration_seconds),
+        distance_km: toOptionalNumber(distance_km),
+        avg_hr: toOptionalNumber(avg_hr),
+        avg_pace,
+        training_zone: zone,
+        feeling: feel,
+        notes,
+        plan_week: toOptionalNumber(plan_week),
+        planned_session_id,
       })
       .select()
       .single();
